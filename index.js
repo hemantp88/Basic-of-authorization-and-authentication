@@ -24,6 +24,12 @@ app.use(express.urlencoded({ extended: true }));//for getting body and param fro
 
 app.use(session({ secret: 'notagoodsecret' }))
 
+//middle for require login
+const requireLogin = (req, res, next) => {
+    if (!req.session.user_id) { return res.redirect('/login'); }
+    next();
+}
+
 
 app.get('/', (req, res) => {
     res.send("This is the home page")
@@ -51,19 +57,14 @@ app.post('/login', async (req, res) => {
     // res.send(req.body);
     const { username, password } = req.body;
     const user = await User.findOne({ username: username });
-    if (!user) {
-        // res.send("try again incorrect username");
-        res.redirect('/login')
-    }
     const validPassword = await bcrypt.compare(password, user.password)
     if (validPassword) {
         req.session.user_id = user._id;
-        // res.send("Yay welcome   !!!");
         res.redirect('/secret')
 
     }
     else {
-        // res.send("Try again");
+        ;
         res.redirect('/login');
     }
 })
@@ -73,12 +74,12 @@ app.post('/logout', (req, res) => {
     res.redirect('/login')
 })
 
-app.get('/secret', (req, res) => {
-    if (!req.session.user_id) {
-        return res.redirect("/login")
-    }
-    else
-        res.render('secret')
+app.get('/secret', requireLogin, (req, res) => {
+    res.render('secret');
+})
+
+app.get('/topsecret', requireLogin, (req, res) => {
+    res.send('Topsecret');
 })
 
 app.listen(3000, () => {
